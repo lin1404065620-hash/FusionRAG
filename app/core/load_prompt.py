@@ -1,0 +1,24 @@
+from pathlib import Path
+from app.utils.path_util import PROJECT_ROOT
+from app.core.logger import logger
+
+
+def load_prompt(name: str, **kwargs) -> str:
+    """
+    加载提示词并渲染变量占位符
+    :param name: 提示词文件名（不带.prompt后缀，如image_summary）
+    :param **kwargs: 需渲染的变量键值对
+    :return: 渲染后的最终提示词字符串
+    """
+    prompt_path = PROJECT_ROOT / 'prompts' / f'{name}.prompt'
+
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"提示词文件不存在：{prompt_path.absolute()}")
+
+    raw_prompt = prompt_path.read_text(encoding='utf-8')
+
+    if kwargs:
+        rendered_prompt = raw_prompt.format(**kwargs)
+        logger.debug(f"提示词渲染成功，替换变量：{list(kwargs.keys())}")
+        return rendered_prompt
+    return raw_prompt

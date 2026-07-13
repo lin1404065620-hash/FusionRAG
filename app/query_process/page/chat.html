@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>产品智答助手</title>
+  <style>
+    :root{
+      --bg:#f0f2f5;
+      --panel:#ffffff;
+      --text:#1e293b;
+      --muted:#94a3b8;
+      --brand:#6366f1;
+      --brand2:#818cf8;
+      --brand3:#a5b4fc;
+      --bubble-user:#6366f1;
+      --bubble-bot:#ffffff;
+      --border:#e2e8f0;
+      --shadow-sm:0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow:0 4px 24px rgba(99,102,241,.08), 0 8px 40px rgba(0,0,0,.06);
+      --shadow-lg:0 20px 60px rgba(99,102,241,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: “Inter”, “Segoe UI”, “Microsoft YaHei”, system-ui, -apple-system, Arial, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 40%, #f0f4ff 100%);
+      color:var(--text);
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:20px;
+    }
+    .app{
+      width:100%;
+      max-width:980px;
+      height:min(860px, 94vh);
+      background:rgba(255,255,255,.85);
+      backdrop-filter:blur(20px);
+      border:1px solid var(--border);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px 20px;
+      border-bottom:1px solid var(--border);
+      background:rgba(255,255,255,.7);
+      backdrop-filter:blur(12px);
+      position:relative;
+      z-index:2;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:220px;
+    }
+    .logo{
+      width:40px;height:40px;border-radius:12px;
+      background:linear-gradient(135deg, var(--brand) 0%, var(--brand2) 100%);
+      box-shadow:0 4px 12px rgba(99,102,241,.35), inset 0 1px 0 rgba(255,255,255,.2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:18px;color:#fff;
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      line-height:1.15;
+    }
+    .title strong{font-size:15px;font-weight:600;letter-spacing:.3px}
+    .title span{font-size:11px;color:var(--muted);margin-top:2px}
+    .top-actions{
+      margin-left:auto;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .pill{
+      font-size:11px;
+      color:var(--muted);
+      border:1px solid var(--border);
+      padding:5px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.6);
+      transition:all .2s;
+    }
+    .btn{
+      border:none;
+      background:linear-gradient(135deg, var(--brand), var(--brand2));
+      color:#fff;
+      padding:7px 14px;
+      border-radius:10px;
+      font-size:12px;
+      cursor:pointer;
+      transition:all .2s;
+      font-weight:500;
+    }
+    .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.3)}
+    .btn:active{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+    .chat{
+      flex:1;
+      overflow:auto;
+      padding:20px 18px 12px;
+      background:linear-gradient(180deg, rgba(99,102,241,.03) 0%, transparent 30%),
+                 linear-gradient(0deg, rgba(129,140,248,.03) 0%, transparent 40%);
+      scroll-behavior:smooth;
+    }
+    .chat::-webkit-scrollbar{width:5px}
+    .chat::-webkit-scrollbar-track{background:transparent}
+    .chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}
+    .dayline{
+      text-align:center;
+      color:var(--muted);
+      font-size:11px;
+      margin:8px 0 16px;
+      letter-spacing:.5px;
+    }
+    .msg{
+      display:flex;
+      gap:10px;
+      margin:12px 0;
+      align-items:flex-end;
+      animation:msgIn .35s ease-out;
+    }
+    @keyframes msgIn{
+      from{opacity:0;transform:translateY(12px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+    .msg.user{justify-content:flex-end}
+    .msg > div:not(.avatar){
+      flex:1;
+      min-width:0;
+    }
+    .msg.user > div:not(.avatar){
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+    }
+    .avatar{
+      width:36px;height:36px;border-radius:12px;
+      background:#f1f5f9;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;font-weight:600;
+      color:#64748b;
+      flex:0 0 auto;
+      box-shadow:var(--shadow-sm);
+    }
+    .avatar.bot{
+      background:linear-gradient(135deg, var(--brand3), var(--brand2));
+      color:#fff;
+    }
+    .bubble{
+      max-width:min(680px, 74%);
+      display:inline-block;
+      border-radius:16px;
+      padding:12px 16px;
+      border:1px solid var(--border);
+      background:var(--bubble-bot);
+      position:relative;
+      line-height:1.6;
+      font-size:14px;
+      white-space:pre-wrap;
+      overflow-wrap:break-word;
+      box-shadow:var(--shadow-sm);
+    }
+    .msg.user .bubble{
+      background:linear-gradient(135deg, var(--brand), var(--brand2));
+      color:#fff;
+      border-color:transparent;
+      box-shadow:0 4px 16px rgba(99,102,241,.25);
+    }
+    .meta{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:5px;
+      letter-spacing:.2px;
+    }
+    .msg.user .meta{color:rgba(255,255,255,.7)}
+    details.progress{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(241,245,249,.6);
+      transition:all .2s;
+    }
+    details.progress[open]{background:rgba(99,102,241,.04);border-color:var(--brand3)}
+    details.progress summary{
+      cursor:pointer;
+      user-select:none;
+      color:var(--text);
+      font-size:12px;
+      font-weight:500;
+      list-style:none;
+    }
+    details.progress summary::-webkit-details-marker{display:none}
+    details.progress summary::before{
+      content:'▸ ';
+      display:inline-block;
+      transition:transform .2s;
+      font-size:10px;
+    }
+    details.progress[open] summary::before{transform:rotate(90deg)}
+    .progress ul{margin:6px 0 0 16px;padding:0}
+    .progress li{margin:3px 0;font-size:12px;color:#475569}
+
+    .answer-images{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .answer-images img{
+      display:block;
+      max-width:min(100%, 560px);
+      max-height:560px;
+      width:auto;
+      height:auto;
+      border-radius:14px;
+      border:1px solid var(--border);
+      box-shadow:0 8px 28px rgba(0,0,0,.08);
+      background:#fff;
+      transition:transform .2s;
+    }
+    .answer-images img:hover{transform:scale(1.02)}
+    .answer-images a{
+      font-size:11px;
+      color:var(--muted);
+      text-decoration:none;
+      word-break:break-all;
+    }
+
+    .typing{
+      display:inline-flex;gap:5px;align-items:center;padding:4px 0;
+    }
+    .dot{
+      width:7px;height:7px;border-radius:50%;
+      background:var(--brand3);
+      animation:wave .9s infinite ease-in-out;
+    }
+    .dot:nth-child(2){animation-delay:.12s}
+    .dot:nth-child(3){animation-delay:.24s}
+    @keyframes wave{
+      0%,60%,100%{transform:translateY(0);opacity:.4}
+      30%{transform:translateY(-8px);opacity:1}
+    }
+
+    .composer{
+      border-top:1px solid var(--border);
+      padding:14px 18px;
+      display:flex;
+      gap:10px;
+      align-items:flex-end;
+      background:rgba(255,255,255,.8);
+      backdrop-filter:blur(8px);
+    }
+    textarea{
+      flex:1;
+      resize:none;
+      min-height:46px;
+      max-height:140px;
+      padding:12px 16px;
+      border-radius:14px;
+      border:1.5px solid var(--border);
+      outline:none;
+      font-size:14px;
+      line-height:1.5;
+      font-family:inherit;
+      background:rgba(248,250,252,.8);
+      transition:all .2s;
+    }
+    textarea:focus{
+      border-color:var(--brand2);
+      box-shadow:0 0 0 4px rgba(99,102,241,.1);
+      background:#fff;
+    }
+    textarea::placeholder{color:var(--muted)}
+    .send{
+      width:84px;
+      height:46px;
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:14px;
+      font-weight:600;
+      color:#fff;
+      background:linear-gradient(135deg, var(--brand), var(--brand2));
+      transition:all .2s;
+      flex-shrink:0;
+    }
+    .send:hover:not(:disabled){
+      transform:translateY(-1px);
+      box-shadow:0 6px 20px rgba(99,102,241,.35);
+    }
+    .send:active:not(:disabled){transform:translateY(0)}
+    .send:disabled{opacity:.5;cursor:not-allowed}
+    .hint{
+      padding:0 18px 10px;
+      color:var(--muted);
+      font-size:11px;
+      background:rgba(255,255,255,.8);
+    }
+    .kbd{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,”Liberation Mono”,monospace;
+      border:1px solid var(--border);
+      padding:2px 7px;
+      border-radius:6px;
+      background:#f1f5f9;
+      color:#475569;
+      font-size:11px;
+    }
+
+    @media(max-width:640px){
+      body{padding:8px}
+      .app{border-radius:12px;height:100vh}
+      .topbar{padding:10px 14px}
+      .title span{display:none}
+      .composer{padding:10px 12px}
+      .bubble{max-width:84%}
+      .top-actions{gap:4px}
+      .pill{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">智</div>
+        <div class="title">
+          <strong>产品智答助手</strong>
+          <span id="subTitle">在线 · AI 智能问答</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;color:var(--muted);margin-right:10px;">
+          <input type="checkbox" id="streamToggle" checked> 流式输出
+        </label>
+        <span class="pill" id="apiPill">API: 未连接</span>
+        <a href="http://127.0.0.1:8000/import" target="_blank" class="pill" style="text-decoration:none;color:var(--brand);font-weight:500;">导入文档</a>
+        <button class="btn" id="btnClear">清空对话</button>
+      </div>
+    </div>
+
+    <div class="chat" id="chat">
+      <div class="dayline">今天</div>
+      <div class="msg bot">
+        <div class=”avatar bot”>助手</div>
+        <div>
+          <div class=”bubble”>你好，我是产品智答助手。你可以直接提问产品相关问题，我会在”阶段进度”里展示处理过程。</div>
+          <div class=”meta”>提示：可以问”HAK 180 烫金机有哪些安全注意事项？”</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <textarea id="input" placeholder="请输入问题（Enter 发送，Shift+Enter 换行）"></textarea>
+      <button class="send" id="send">发送</button>
+    </div>
+    <div class="hint">快捷键：<span class="kbd">Enter</span> 发送，<span class="kbd">Shift</span>+<span class="kbd">Enter</span> 换行</div>
+  </div>
+
+  <script>
+    // 默认同源；如你把页面单独打开（file://），可改成 http://127.0.0.1:8001
+    const API_BASE = `${location.protocol}//${location.host}`.includes('http') ? `${location.protocol}//${location.host}` : 'http://127.0.0.1:8001';
+    const chatEl = document.getElementById('chat');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const apiPill = document.getElementById('apiPill');
+    const btnClear = document.getElementById('btnClear');
+    const streamToggle = document.getElementById('streamToggle');
+
+    // Session ID Logic
+    let sessionId = localStorage.getItem('kb_session_id');
+    if (!sessionId) {
+      sessionId = 'sess-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('kb_session_id', sessionId);
+    }
+
+    function scrollToBottom(){
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+    function nowTime(){
+      const d = new Date();
+      return d.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+    }
+    function formatTime(ts){
+      if(!ts) return nowTime();
+      const d = new Date(Number(ts) * 1000);
+      if(Number.isNaN(d.getTime())) return nowTime();
+      return d.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+    }
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    function isImageUrl(url){
+      // 增加宽松度，有些 url 可能后面跟了奇怪的参数
+      // 只要包含 .jpg .png 等扩展名，且后面是 ? # 或 结束，或者被某些标点截断前
+      // 简单判断：路径部分以图片后缀结尾
+      try {
+        const u = new URL(url);
+        return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(u.pathname);
+      } catch (e) {
+        // 如果 new URL 失败（比如相对路径或非法字符），退回正则匹配
+        return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|#|$)/i.test(url || '');
+      }
+    }
+
+    function normalizeUrl(rawUrl){
+      const s = String(rawUrl || '').trim();
+      if(!s) return '';
+      // 尽量保留原始 URL，但把空格编码，避免 img src 失败
+      return s.replace(/\s/g, '%20');
+    }
+
+    function dedupeKeepOrder(arr){
+      const seen = new Set();
+      const out = [];
+      for(const x of (Array.isArray(arr) ? arr : [])){
+        const v = String(x || '');
+        if(!v) continue;
+        if(seen.has(v)) continue;
+        seen.add(v);
+        out.push(v);
+      }
+      return out;
+    }
+
+    function extractUrlsLoose(text){
+      const s = String(text || '');
+      // 简单正则提取：匹配 http/https 开头，直到遇到空白字符
+      // [^\s] 包含中文、特殊符号等，直到遇到换行或空格
+      const regex = /(https?:\/\/[^\s]+)/g;
+      const matches = s.match(regex) || [];
+      const urls = [];
+      
+      // 去除首尾标点
+      const trimTailPunct = (u) => String(u || '').replace(/[)\]}'">，。,;；\]】）＞]+$/g, '');
+      const trimHeadPunct = (u) => String(u || '').replace(/^[<([{'"]+|^[＜（【\[]+/g, '');
+
+      for(const m of matches){
+        let u = trimHeadPunct(trimTailPunct(m));
+        // 简单清洗可能混入的结尾
+        if(u) urls.push(u);
+      }
+      return dedupeKeepOrder(urls);
+    }
+
+    function parseImagesFromTextLoosely(text){
+      const urls = extractUrlsLoose(text).filter(isImageUrl);
+      return dedupeKeepOrder(urls);
+    }
+
+    function findLastImageMarkerIndex(raw){
+      const s = String(raw || '');
+      // 支持多种写法：【图片】、【 图片 】、[图片]、[ 图片 ]
+      const re = /【\s*图片\s*】|\[\s*图片\s*\]/g;
+      let m;
+      let lastIdx = -1;
+      let lastLen = 0;
+      while((m = re.exec(s)) !== null){
+        lastIdx = m.index;
+        lastLen = m[0].length;
+      }
+      return { idx: lastIdx, len: lastLen };
+    }
+
+    function parseAnswerAndImages(text){
+      const raw = String(text || '');
+      const { idx, len } = findLastImageMarkerIndex(raw);
+      if(idx === -1) return { text: raw, images: [] };
+
+      const before = raw.slice(0, idx).trimEnd();
+      const after = raw.slice(idx + len).trim();
+      const urls = [];
+
+      // 优先按“每行一个 URL”的方式解析，允许 URL 中包含空格
+      const lines = after.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      for(const line of lines){
+        if(line.startsWith('http://') || line.startsWith('https://')){
+          urls.push(line);
+        }else{
+          // 兼容同一行包含多个 URL 的情况
+          const matches = extractUrlsLoose(line);
+          for(const u of matches){
+            urls.push(u);
+          }
+        }
+      }
+
+      // 去重保序 + 过滤图片链接
+      const seen = new Set();
+      const images = [];
+      for(const u of urls){
+        const normalized = normalizeUrl(u);
+        if(!isImageUrl(normalized)) continue;
+        if(seen.has(normalized)) continue;
+        seen.add(normalized);
+        images.push(normalized);
+      }
+      return { text: before, images };
+    }
+
+    function shouldShowImagesByAnswer(answerText){
+      const t = String(answerText || '');
+      // 常见“需要看图/见图/如下图”的表述
+      const keywords = [
+        '如图', '如下图', '见图', '见下图', '下图', '上图',
+        '图片', '示意图', '结构图', '外观', '接线图', '电路图', '原理图', '安装图', '尺寸图', '截图'
+      ];
+      return keywords.some(k => t.includes(k));
+    }
+
+    function renderAnswerWithImages(containerEl, answerText, candidateImageUrls){
+      const { text, images: imagesFromBlock } = parseAnswerAndImages(answerText);
+      const candidates = Array.isArray(candidateImageUrls)
+        ? candidateImageUrls.map(normalizeUrl).filter(isImageUrl)
+        : [];
+      const hasBlockImages = imagesFromBlock && imagesFromBlock.length > 0;
+      
+      // 使用宽松提取
+      const looseImages = extractUrlsLoose(answerText).map(normalizeUrl).filter(isImageUrl);
+      
+      // 只要后端给了候选图片，就展示（避免答案没写“如图”但用户仍需要看图）
+      // 或者从文本里提取到了图片 URL
+      const shouldShow = hasBlockImages || (candidates.length > 0) || (looseImages.length > 0);
+      
+      // 优先级：Block 显式标记 > 后端候选 > 文本宽松提取
+      // 注意：这里做个并集可能更好，防止漏掉
+      const allImages = new Set([
+          ...(hasBlockImages ? imagesFromBlock : []),
+          ...candidates,
+          ...looseImages
+      ]);
+      const images = Array.from(allImages);
+
+      containerEl.textContent = '';
+
+      if((text || '').trim().length > 0){
+        const textEl = document.createElement('div');
+        textEl.className = 'answer-text';
+        textEl.textContent = text;
+        containerEl.appendChild(textEl);
+      }else{
+        const textEl = document.createElement('div');
+        textEl.className = 'answer-text';
+        textEl.textContent = '（已完成，但未返回答案）';
+        containerEl.appendChild(textEl);
+      }
+
+      if(images && images.length > 0){
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'answer-images';
+        for(const url of images){
+          const safeUrl = normalizeUrl(url);
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.src = safeUrl;
+          img.alt = '参考图片';
+          img.referrerPolicy = 'no-referrer';
+          img.addEventListener('error', () => {
+            img.style.display = 'none';
+          });
+          imgWrap.appendChild(img);
+
+          const link = document.createElement('a');
+          link.href = safeUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = url;
+          imgWrap.appendChild(link);
+        }
+        containerEl.appendChild(imgWrap);
+      }
+    }
+
+    function addUserMsg(text){
+      const html = `
+        <div class="msg user">
+          <div>
+            <div class="bubble">${escapeHtml(text)}</div>
+            <div class="meta">${nowTime()}</div>
+          </div>
+          <div class="avatar">我</div>
+        </div>
+      `;
+      chatEl.insertAdjacentHTML('beforeend', html);
+      scrollToBottom();
+    }
+
+    function addUserMsgWithTime(text, ts){
+      const html = `
+        <div class="msg user">
+          <div>
+            <div class="bubble">${escapeHtml(text)}</div>
+            <div class="meta">${formatTime(ts)}</div>
+          </div>
+          <div class="avatar">我</div>
+        </div>
+      `;
+      chatEl.insertAdjacentHTML('beforeend', html);
+      scrollToBottom();
+    }
+
+    function addBotMsgWithTime(text, ts, imageUrls){
+      const id = 'bot-his-' + Math.random().toString(36).slice(2);
+      const html = `
+        <div class="msg bot" id="${id}">
+          <div class="avatar bot">助手</div>
+          <div>
+            <div class="bubble"><div class="answer"></div></div>
+            <div class="meta">${formatTime(ts)}</div>
+          </div>
+        </div>
+      `;
+      chatEl.insertAdjacentHTML('beforeend', html);
+      const el = document.getElementById(id);
+      if(el){
+        const answerEl = el.querySelector('.answer');
+        renderAnswerWithImages(answerEl, text || '', imageUrls || []);
+      }
+      scrollToBottom();
+    }
+
+    function addBotMsgSkeleton(){
+      const id = 'bot-' + Math.random().toString(36).slice(2);
+      const html = `
+        <div class="msg bot" id="${id}">
+          <div class="avatar bot">助手</div>
+          <div style="min-width: 180px;">
+            <div class="bubble">
+              <span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+              <details class="progress" open>
+                <summary>阶段进度（等待中）</summary>
+                <ul></ul>
+              </details>
+            </div>
+            <div class="meta">${nowTime()}</div>
+          </div>
+        </div>
+      `;
+      chatEl.insertAdjacentHTML('beforeend', html);
+      scrollToBottom();
+      return document.getElementById(id);
+    }
+
+    function renderProgress(botMsgEl, doneList, runningList, status){
+      const details = botMsgEl.querySelector('details.progress');
+      const summary = details.querySelector('summary');
+      const ul = details.querySelector('ul');
+      const done = Array.isArray(doneList) ? doneList : [];
+      const running = Array.isArray(runningList) ? runningList : [];
+      const totalDone = done.length;
+      const totalRun = running.length;
+
+      const statusMap = {
+        'processing': '处理中',
+        'completed': '已完成',
+        'failed': '失败',
+        'pending': '等待中',
+      };
+      const displayStatus = statusMap[status] || status || 'unknown';
+
+      summary.textContent = `阶段进度（已完成${totalDone}，进行中${totalRun}，状态：${displayStatus}）`;
+
+      const lines = [
+        ...done.map(x => `✅ ${x}`),
+        ...running.map(x => `⏳ ${x}`)
+      ];
+      ul.innerHTML = '';
+      if(lines.length === 0){
+        ul.insertAdjacentHTML('beforeend', '<li>暂无进度</li>');
+      }else{
+        for(const line of lines){
+          ul.insertAdjacentHTML('beforeend', `<li>${escapeHtml(line)}</li>`);
+        }
+      }
+    }
+
+    function finalizeBotAnswer(botMsgEl, answer, error, imageUrls){
+      const bubble = botMsgEl.querySelector('.bubble');
+      const progress = botMsgEl.querySelector('details.progress');
+      const err = (error || '').trim();
+
+      if(err){
+        const progressEl = progress ? progress : null;
+        if(progressEl) {
+            progressEl.remove();
+            progressEl.removeAttribute('open');
+        }
+        bubble.textContent = '';
+        const errEl = document.createElement('div');
+        errEl.className = 'answer';
+        errEl.textContent = `抱歉，本次处理失败：\n${err}`;
+        bubble.appendChild(errEl);
+        if(progressEl) bubble.appendChild(progressEl);
+        return;
+      }
+
+      const progressEl = progress ? progress : null;
+      if(progressEl) {
+        progressEl.remove();
+        progressEl.removeAttribute('open'); // 完成后自动收起
+      }
+      bubble.textContent = '';
+      const answerEl = document.createElement('div');
+      answerEl.className = 'answer';
+      bubble.appendChild(answerEl);
+      renderAnswerWithImages(answerEl, answer || '', imageUrls || []);
+      if(progressEl) bubble.appendChild(progressEl);
+    }
+
+    async function apiHealth(){
+      try{
+        const res = await fetch(`${API_BASE}/health`);
+        if(!res.ok) throw new Error('health not ok');
+        apiPill.textContent = `API: 已连接`;
+      }catch(e){
+        apiPill.textContent = `API: 未连接`;
+      }
+    }
+
+    async function loadHistory(){
+      try{
+        const res = await fetch(`${API_BASE}/history/${sessionId}`);
+        if(!res.ok) return;
+        const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        if(items.length === 0) return;
+        // 保留首条欢迎消息，其余先清空再渲染历史
+        const nodes = Array.from(chatEl.querySelectorAll('.msg'));
+        for(let i=1;i<nodes.length;i++) nodes[i].remove();
+        for(const item of items){
+          if(item.role === 'user'){
+            addUserMsgWithTime(item.text || '', item.ts);
+          }else{
+            addBotMsgWithTime(item.text || '', item.ts, item.image_urls || []);
+          }
+        }
+        scrollToBottom();
+      }catch(_){}
+    }
+
+    async function submitQuery(text){
+      const isStream = streamToggle.checked;
+      const res = await fetch(`${API_BASE}/query`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          query: text,
+          session_id: sessionId,
+          is_stream: isStream
+        })
+      });
+      if(!res.ok){
+        const msg = await res.text();
+        throw new Error(msg || '请求失败');
+      }
+      return await res.json();
+    }
+
+    async function poll(taskId, botMsgEl){
+      const typing = botMsgEl.querySelector('.typing');
+      const interval = setInterval(async () => {
+        try{
+          const res = await fetch(`${API_BASE}/status/${taskId}`);
+          const data = await res.json();
+          renderProgress(botMsgEl, data.done_list, data.running_list, data.status);
+
+          if(data.status === 'completed'){
+            if(typing) typing.remove();
+            finalizeBotAnswer(botMsgEl, data.answer, data.error, data.image_urls || []);
+            clearInterval(interval);
+            sendBtn.disabled = false;
+          }else if(data.status === 'failed'){
+            if(typing) typing.remove();
+            finalizeBotAnswer(botMsgEl, data.answer, data.error || 'failed', data.image_urls || []);
+            clearInterval(interval);
+            sendBtn.disabled = false;
+          }
+        }catch(e){
+          // 轮询错误不立刻终止，让用户稍后重试
+        }
+      }, 1200);
+    }
+
+    async function onSend(){
+      console.log('[perf] A onSend start', performance.now());
+      const text = (inputEl.value || '').trim();
+      if(!text) return;
+      inputEl.value = '';
+      addUserMsg(text);
+      const botMsgEl = addBotMsgSkeleton();
+      sendBtn.disabled = true;
+
+      try{
+        const isStream = streamToggle.checked;
+        console.log('[perf] B submitQuery start', performance.now(), { isStream });
+        const data = await submitQuery(text);
+        console.log('[perf] B submitQuery end', performance.now(), data);
+        
+        // 渲染初始状态
+        renderProgress(botMsgEl, [], [], 'pending');
+
+        if (!isStream) {
+          // 非流式：直接拿到结果
+          // data: { session_id, answer, done_list, error, message }
+          renderProgress(botMsgEl, data.done_list || [], [], 'completed');
+          finalizeBotAnswer(botMsgEl, data.answer, data.error, data.image_urls || []);
+          sendBtn.disabled = false;
+          return;
+        }
+
+        // 流式：SSE
+        const { session_id } = data; // 此时 backend 返回 session_id
+        
+        const bubble = botMsgEl.querySelector('.bubble');
+        let answerEl = bubble.querySelector('.answer');
+        if(!answerEl){
+          answerEl = document.createElement('div');
+          answerEl.className = 'answer';
+          bubble.insertBefore(answerEl, bubble.firstChild);
+        }
+
+        const es = new EventSource(`${API_BASE}/stream/${session_id}`);
+        console.log('[perf] C EventSource created', performance.now(), { session_id });
+        let rawAnswerText = '';
+
+        es.addEventListener('progress', (e) => {
+          try{
+            const d = JSON.parse(e.data || '{}');
+            renderProgress(botMsgEl, d.done_list, d.running_list, d.status);
+            // 当进度状态已完成时，提前结束“...”等待态
+            if(d && d.status === 'completed'){
+              const typing = botMsgEl.querySelector('.typing');
+              if(typing) typing.remove();
+              // 防止后端未发送 final 导致按钮一直禁用
+              sendBtn.disabled = false;
+            }
+          }catch(_){}
+        });
+
+        es.addEventListener('delta', (e) => {
+          try{
+            const d = JSON.parse(e.data || '{}');
+            const delta = d.delta || '';
+            if(delta){
+              rawAnswerText += delta;
+              // 即使后端未发送 final，也尽可能在流式过程中渲染图片
+              renderAnswerWithImages(answerEl, rawAnswerText, []);
+              scrollToBottom();
+            }
+          }catch(_){}
+        });
+
+        es.addEventListener('final', (e) => {
+          const typing = botMsgEl.querySelector('.typing');
+          if(typing) typing.remove();
+          // 收起进度条
+          const progress = botMsgEl.querySelector('details.progress');
+          if(progress) progress.removeAttribute('open');
+          
+          try{
+            const d = JSON.parse(e.data || '{}');
+            // 流式 delta 可能不包含“【图片】/图片列表”，最终包的 d.answer 才是完整答案；优先使用 d.answer
+            const finalText = (d && typeof d.answer === 'string' && d.answer.trim().length > 0) ? d.answer : (rawAnswerText || answerEl.textContent || '');
+            renderAnswerWithImages(answerEl, finalText, d.image_urls || []);
+          }catch(_){}
+          es.close();
+          sendBtn.disabled = false;
+        });
+
+        es.addEventListener('final_answer', (e) => {
+           // 响应用户的 final_answer 信号，确保图片渲染
+          const typing = botMsgEl.querySelector('.typing');
+          if(typing) typing.remove();
+          const progress = botMsgEl.querySelector('details.progress');
+          if(progress) progress.removeAttribute('open');
+          
+          try{
+            const d = JSON.parse(e.data || '{}');
+            const finalText = (d && typeof d.answer === 'string' && d.answer.trim().length > 0) ? d.answer : (rawAnswerText || answerEl.textContent || '');
+            renderAnswerWithImages(answerEl, finalText, d.image_urls || []);
+          }catch(_){}
+          es.close();
+          sendBtn.disabled = false;
+        });
+
+        es.addEventListener('error', (e) => {
+          const typing = botMsgEl.querySelector('.typing');
+          if(typing) typing.remove();
+          // 收起进度条
+          const progress = botMsgEl.querySelector('details.progress');
+          if(progress) progress.removeAttribute('open');
+
+          try{
+            const msg = e && e.data ? (JSON.parse(e.data).error || 'SSE 连接中断/失败') : 'SSE 连接中断/失败';
+            rawAnswerText += `\n\n（错误：${msg}）`;
+            renderAnswerWithImages(answerEl, rawAnswerText, []);
+          }catch(_){
+            rawAnswerText += `\n\n（错误：SSE 连接中断/失败）`;
+            renderAnswerWithImages(answerEl, rawAnswerText, []);
+          }
+          es.close();
+          sendBtn.disabled = false;
+        });
+      }catch(e){
+        const bubble = botMsgEl.querySelector('.bubble');
+        const progress = botMsgEl.querySelector('details.progress');
+        const typing = botMsgEl.querySelector('.typing');
+        if(typing) typing.remove();
+        bubble.innerHTML = `请求失败：${escapeHtml(e.message || e)}\n\n` + progress.outerHTML;
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener('click', onSend);
+    inputEl.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        onSend();
+      }
+    });
+    btnClear.addEventListener('click', async () => {
+      if(!confirm('确定要清空当前会话的历史记录吗？这将无法恢复。')) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/history/${sessionId}`, { method: 'DELETE' });
+        if(!res.ok) {
+           console.error("Failed to clear history backend, status:", res.status);
+           alert('服务端清空失败，仅清空本地显示');
+        }
+      } catch(e) {
+        console.error("Failed to clear history backend", e);
+        alert('服务端清空失败，仅清空本地显示');
+      }
+
+      // 清空除首条欢迎消息外的内容
+      const nodes = Array.from(chatEl.querySelectorAll('.msg'));
+      for(let i=1;i<nodes.length;i++) nodes[i].remove();
+      scrollToBottom();
+    });
+
+    apiHealth();
+    setInterval(apiHealth, 5000);
+    loadHistory();
+    setTimeout(() => inputEl.focus(), 200);
+  </script>
+</body>
+</html>
+
+
